@@ -1,21 +1,12 @@
 #' ------------------------------------------------------
-#' @project Diagnóstico para o Programa Juventude Negra Viva
 #' @author Thiago Cordeiro Almeida
-#' @last-update 2023-10-07
+#' @last-update 2023-10-08
 #' @description Função de importação e selecao de variaveis
 #' -----------------------------------------------------
 
-anos <- 2013:2018
-# ano de analise
-ano <- anos[i]
-
-vars = TRUE
-vars_fam = vars_fam
-vars_pes = vars_pes
-
 # Funcao ------------------------------------------------------------------
 
-importacao_tratamento_cad <- function(ano = ano,vars = TRUE,vars_fam = vars_fam,vars_pes = vars_pes){
+importacao_tratamento_cad <- function(ano,vars = TRUE, vars_fam, vars_pes){
   # pacotes exigidos
   if(!require("pacman")) install.packages("pacman")
   pacman::p_load(readr, tidyverse)
@@ -78,10 +69,7 @@ importacao_tratamento_cad <- function(ano = ano,vars = TRUE,vars_fam = vars_fam,
     callback = DataFrameCallback$new(leitura_quebrada_pes)
   )
 
-  df_pes <- df_pes |>
-    select(id_pessoa) |> distinct()
-
-  # importacao da base de pessoas
+  # importacao da base de familia
 
   df_fam <- read_csv2_chunked(
     file = DIR_FAM,
