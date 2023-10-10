@@ -293,7 +293,7 @@ indicadores_municipais_cad <- function(ano,vars,indicador = "ambos"){
           jovens_15_29_ocupados == 1 & ind_branco == 1 ~ 1, TRUE ~ 0
         )
       )
-
+    print("Finalizamos a parte dos indivíduos!!!")
     gc()
     #'------------------------------------------------------------------------
     # indicador prop renda
@@ -364,14 +364,17 @@ indicadores_municipais_cad <- function(ano,vars,indicador = "ambos"){
 
     rm(df_renda)
 
+    print("Finalizamos a parte da renda!!!")
     gc()
 
     #'------------------------------------------------------------------------
     ## INDICADORES FAMILIARES
     df_familiar <- df |>
-      group_by(cd_ibge,id_familia) |>
       reframe(
         peso = peso.fam,
+        id_familia = id_familia,
+        id_pessoa = id_pessoa,
+
         # esgoto
         familias_com_jovens_15_29_esgoto = case_when(
           ind_jovem_15_29 == 1 & ind_esgoto == 1 ~ 1, TRUE ~ 0
@@ -402,7 +405,66 @@ indicadores_municipais_cad <- function(ano,vars,indicador = "ambos"){
         familias_com_jovens_brancos_15_29_pbf = case_when(
           familias_com_jovens_15_29_pbf == 1 & ind_branco == 1 ~ 1, TRUE ~ 0
         )
+      ) |>
+      group_by(id_familia) |>
+      reframe(
+        peso = peso,
+        # esgoto
+        familias_com_jovens_15_29_esgoto = sum(familias_com_jovens_15_29_esgoto),
+        familias_com_jovens_15_29 =  sum(familias_com_jovens_15_29),
+        familias_com_jovens_negros_15_29_esgoto = sum(familias_com_jovens_negros_15_29_esgoto),
+        familias_com_jovens_negros_15_29 =  sum(familias_com_jovens_negros_15_29),
+        familias_com_jovens_brancos_15_29_esgoto = sum(familias_com_jovens_brancos_15_29_esgoto),
+        familias_com_jovens_brancos_15_29 =  sum(familias_com_jovens_brancos_15_29),
+
+        #PBF
+        familias_com_jovens_15_29_pbf = sum(familias_com_jovens_15_29_pbf),
+        familias_com_jovens_negros_15_29_pbf = sum(familias_com_jovens_negros_15_29_pbf),
+        familias_com_jovens_brancos_15_29_pbf = sum(familias_com_jovens_brancos_15_29_pbf)
       )
+
+    rm(df)
+    print("Finalizamos a parte 1/3 da familia!!!")
+
+    # criando binarias para as familias
+    df_familiar <- df_familiar |>
+      mutate(
+        reframe(
+          peso = peso,
+          # esgoto
+          familias_com_jovens_15_29_esgoto = case_when(
+            familias_com_jovens_15_29_esgoto > 0 ~ 1, TRUE ~ 0
+          ),
+          familias_com_jovens_15_29 =  case_when(
+            familias_com_jovens_15_29 > 0 ~ 1, TRUE ~ 0
+          ),
+          familias_com_jovens_negros_15_29_esgoto = case_when(
+            familias_com_jovens_negros_15_29_esgoto > 0 ~ 1, TRUE ~ 0
+          ),
+          familias_com_jovens_negros_15_29 =  case_when(
+            familias_com_jovens_negros_15_29 > 0 ~ 1, TRUE ~ 0
+          ),
+          familias_com_jovens_brancos_15_29_esgoto = case_when(
+            familias_com_jovens_brancos_15_29_esgoto > 0 ~ 1, TRUE ~ 0
+          ),
+          familias_com_jovens_brancos_15_29 =  case_when(
+            familias_com_jovens_brancos_15_29 > 0 ~ 1, TRUE ~ 0
+          ),
+
+          #PBF
+          familias_com_jovens_15_29_pbf = case_when(
+            familias_com_jovens_15_29_pbf > 0 ~ 1, TRUE ~ 0
+          ),
+          familias_com_jovens_negros_15_29_pbf = case_when(
+            familias_com_jovens_negros_15_29_pbf > 0 ~ 1, TRUE ~ 0
+          ),
+          familias_com_jovens_brancos_15_29_pbf = case_when(
+            familias_com_jovens_brancos_15_29_pbf > 0 ~ 1, TRUE ~ 0
+          )
+        )
+      )
+
+    print("Finalizamos a parte 2/3 da familia!!!")
 
     # agregando valores familiares a nivel do municipio
 
@@ -423,6 +485,8 @@ indicadores_municipais_cad <- function(ano,vars,indicador = "ambos"){
         familias_com_jovens_brancos_15_29_pbf = sum(familias_com_jovens_brancos_15_29_pbf * peso),
       )
 
+    print("Finalizamos a parte 3/3 da familia!!!")
+
     # juntando familia à base dos individuos
 
     df <- df_individual |>
@@ -433,5 +497,6 @@ indicadores_municipais_cad <- function(ano,vars,indicador = "ambos"){
     return(df)
 
   }
+  print(paste0("Finalizamos as bases a nível municipal para o ano: ",ano,"!!!"))
 
 }

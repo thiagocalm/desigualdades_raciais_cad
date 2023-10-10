@@ -5,6 +5,7 @@
 #' -----------------------------------------------------
 options(scipen = 9999999)
 rm(list = ls())
+gc()
 
 # bibliotecas -------------------------------------------------------------
 
@@ -19,7 +20,7 @@ source("./codigos/X_func_ind_municipais.R")
 
 # definicao de diretorio de exportacao e parametros da funcao
 
-anos <- 2013
+anos <- 2013:2018
 
 OUT_DIR <- "./dados"
 
@@ -33,10 +34,11 @@ for(i in seq_along(anos)){
   df <- indicadores_municipais_cad(ano = ano, vars = vars)
 
   # exportar dados
-  # write_parquet(df, sink = file.path(OUT_DIR, paste0("cad_",ano,".parquet")))
+  write_parquet(df, sink = file.path(OUT_DIR, paste0("cad_",ano,"_municipal.parquet")))
 
   # proximo loop
-  # rm(df)
+  rm(df)
   print(paste0("Finalizamos o ano: ", ano,"!!!"))
   gc()
 }
+

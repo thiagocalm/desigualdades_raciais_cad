@@ -45,7 +45,9 @@ importacao_tratamento_cad <- function(ano,vars = TRUE, vars_fam, vars_pes){
       ) |>
       ungroup() |>
       mutate(
-        id_pessoa = as.numeric(paste0(id_familia, ordem))
+        id_pessoa = as.numeric(paste0(id_familia, ordem)),
+        peso.pes = peso.pes/(1*10^14),
+        peso.fam = peso.fam/(1*10^14)
       ) |>
       select(-ordem) |>
       select(id_familia, id_pessoa, everything())
