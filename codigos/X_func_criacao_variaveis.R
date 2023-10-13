@@ -1,6 +1,6 @@
 #' ------------------------------------------------------
 #' @author Thiago Cordeiro Almeida
-#' @last-update 2023-10-08
+#' @last-update 2023-10-13
 #' @description Função de criacao de variaveis derivadas
 #' -----------------------------------------------------
 
@@ -48,10 +48,10 @@ processamento_cad <- function(ano,vars){
       ind_esgoto = case_when(cod_escoa_sanitario_domic_fam == 1 ~ 1, TRUE ~ 0),
       ind_pbf = case_when(marc_pbf == 1 ~ 1, TRUE ~ 0),
       ind_desocupado = case_when(
-         cod_trabalhou_memb == 0 & cod_afastado_trab_memb == 0 ~ 1,
+         cod_trabalhou_memb == 2 ~ 1,
         TRUE ~ 0),
       ind_ocupado = case_when(
-        cod_trabalhou_memb == 1 | cod_trabalhou_memb == 0 & cod_afastado_trab_memb == 1 ~ 1,
+        cod_trabalhou_memb == 1 | cod_trabalhou_memb == 2 & cod_afastado_trab_memb == 1 ~ 1,
         TRUE ~ 0),
       ind_informal = case_when(cod_principal_trab_memb %in% c(1,3,5,7) ~ 1, TRUE ~ 0)
     )
@@ -71,7 +71,7 @@ processamento_cad <- function(ano,vars){
   # selecionando variaveis remanescentes
   df <- df |>
     select(-c(
-      cod_sexo_pessoa,idade,cod_raca_cor_pessoa,cod_curso_frequenta_memb,marc_pbf,
+      cod_sexo_pessoa,cod_raca_cor_pessoa,cod_curso_frequenta_memb,marc_pbf,
       cod_escoa_sanitario_domic_fam,cod_trabalhou_memb,cod_afastado_trab_memb,
       cod_principal_trab_memb,val_remuner_emprego_memb,val_renda_doacao_memb,
       val_renda_aposent_memb,val_renda_seguro_desemp_memb,
