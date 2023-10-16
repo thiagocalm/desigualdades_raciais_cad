@@ -1,6 +1,6 @@
 #' ------------------------------------------------------
 #' @author Thiago Cordeiro Almeida
-#' @last-update 2023-10-13
+#' @last-update 2023-10-136
 #' @description Estimativas dos indicadores a nível municipal
 #' -----------------------------------------------------
 options(scipen = 9999999)
@@ -50,9 +50,9 @@ indicadores_municipais <- indicadores_municipais |>
   group_by(ano, cd_ibge) |>
   reframe(
     # Ensino Medio
-    indicador_em <- round(100*(jovens_15_17_frequentam_em/jovens_15_17),2),
-    indicador_em_negros <- round(100*(jovens_negros_15_17_frequentam_em/jovens_negros_15_17),2),
-    indicador_em_brancos <- round(100*(jovens_brancos_15_17_frequentam_em/jovens_brancos_15_17),2),
+    indicador_em = round(100*(jovens_15_17_frequentam_em/jovens_15_17),2),
+    indicador_em_negros = round(100*(jovens_negros_15_17_frequentam_em/jovens_negros_15_17),2),
+    indicador_em_brancos = round(100*(jovens_brancos_15_17_frequentam_em/jovens_brancos_15_17),2),
 
     # infraestrutura
     indicador_acesso_esgoto = round(100*(familias_com_jovens_15_29_esgoto/familias_com_jovens_15_29),2),
@@ -88,7 +88,8 @@ indicadores_municipais <- indicadores_municipais |>
     uf = substr(cd_ibge,1,2),
     regiao = substr(uf,1,1)
   ) |>
-  select(ano,regiao, uf, everything())
+  select(ano,regiao, uf, everything()) |>
+  mutate_all(~ replace_na(.x,0))
 
 
 # Exportacao dos dados ----------------------------------------------------
