@@ -20,15 +20,10 @@ df_desigualdade <- read_parquet(file = paste0("./output/cad_indicadores_municipa
 
 # Exploratória da distribuição --------------------------------------------
 
-casos_avaliacao <- df_desigualdade |>
-  pivot_longer(cols = indicador_em:indicador_informalidade_brancos, names_to = "indicador", values_to = "valor") |>
-  filter(valor > 100)
-
 # Boxplot
 
 df_desigualdade |>
   pivot_longer(cols = indicador_em:indicador_informalidade_brancos, names_to = "indicador", values_to = "valor") |>
-  filter(valor <= 100) |>
   mutate(
     cor = str_sub(indicador, start= -5,-3),
     cor = as.factor(case_when(cor == "egr" ~ "Negros",cor == "anc" ~ "Brancos", TRUE ~ "Total"))
@@ -55,7 +50,6 @@ df_desigualdade |>
 
 df_desigualdade |>
   pivot_longer(cols = indicador_em:indicador_informalidade_brancos, names_to = "indicador", values_to = "valor") |>
-  filter(valor <= 100) |>
   mutate(
     cor = str_sub(indicador, start= -5,-3),
     cor = as.factor(case_when(cor == "egr" ~ "Negros",cor == "anc" ~ "Brancos", TRUE ~ "Total"))
