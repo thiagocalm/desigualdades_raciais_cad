@@ -1,7 +1,7 @@
 #' ------------------------------------------------------
 #' @author Thiago Cordeiro Almeida
 #' @last-update 2023-10-18
-#' @description Análises exploratórias
+#' @description Análises exploratórias dos dados de desigualdade
 #' -----------------------------------------------------
 options(scipen = 9999999)
 rm(list = ls())
