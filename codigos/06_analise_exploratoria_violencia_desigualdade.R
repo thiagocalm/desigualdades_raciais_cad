@@ -10,7 +10,7 @@ gc()
 # bibliotecas -------------------------------------------------------------
 
 if(!require("pacman")) install.packages(("pacman"))
-pacman::p_load(tidyverse, arrow, openxlsx)
+pacman::p_load(tidyverse, arrow, openxlsx, Hmisc, corrplot)
 
 # Importacao dos dados ----------------------------------------------------
 DIR <- "./output/base de dados - violencia e desigualdade"
@@ -610,3 +610,184 @@ writeData(wb, 21, t7_uf_munic)
 # exportar xlsx
 
 saveWorkbook(wb, file = file.path(DIR, paste0("resultados - ranking.xlsx")),overwrite = TRUE)
+
+
+# Analises de correlação --------------------------------------------------
+
+func_montar_base_correlacoes <- function(periodo, input = df_analises){
+   if(periodo > 0) {
+    # negros geral
+    cor_raca = "negros"
+
+    df_cor <- input |>
+      filter(ano %in% periodo) |>
+      select(ends_with(c(cor_raca,"negras")))
+
+    corr <- rcorr(as.matrix(df_cor))
+
+    variaveis <- str_remove(rownames(corr$r),paste0("_",cor_raca))
+    variaveis <- str_remove(variaveis,"_negras")
+
+    corr_r <- corr$r |>
+      as_tibble() |>
+      select(
+        coef_homicidios = indicador_homicidios_negros,
+        coef_intervencao = indicador_intervencao_negros
+      )
+
+    corr_P <- corr$P |>
+      as_tibble() |>
+      select(
+        Pvalue_homicidios = indicador_homicidios_negros,
+        Pvalue_intervencao = indicador_intervencao_negros
+      )
+
+    out_negros <- corr_r |>
+      bind_cols(corr_P) |>
+      mutate(
+        variavel = variaveis,
+        ano = as.character(periodo),
+        cor_raca = cor_raca
+      ) |>
+      select(variavel, ano, cor_raca, everything())
+
+    # brancos geral
+    cor_raca = "brancos"
+
+    df_cor <- input |>
+      filter(ano %in% periodo) |>
+      select(ends_with(c(cor_raca,"brancas"))) |>
+      select(-c(indicador_homicidios_negros_maior_brancos, indicador_intervencao_negros_maior_brancos))
+
+    corr <- rcorr(as.matrix(df_cor))
+
+    variaveis <- str_remove(rownames(corr$r),paste0("_",cor_raca))
+    variaveis <- str_remove(variaveis,"_brancas")
+
+    corr_r <- corr$r |>
+      as_tibble() |>
+      select(
+        coef_homicidios = indicador_homicidios_brancos,
+        coef_intervencao = indicador_intervencao_brancos
+      )
+
+    corr_P <- corr$P |>
+      as_tibble() |>
+      select(
+        Pvalue_homicidios = indicador_homicidios_brancos,
+        Pvalue_intervencao = indicador_intervencao_brancos
+      )
+
+    out_brancos <- corr_r |>
+      bind_cols(corr_P) |>
+      mutate(
+        variavel = variaveis,
+        ano = as.character(periodo),
+        cor_raca = cor_raca
+      ) |>
+      select(variavel, ano, cor_raca, everything())
+
+    # juntar dados
+
+    output <- out_negros |>
+      bind_rows(out_brancos)
+   } else{
+     # negros geral
+     cor_raca = "negros"
+     df_cor <- input |>
+       # filter(ano %in% ano) |>
+       select(ends_with(c(cor_raca,"negras")))
+
+     corr <- rcorr(as.matrix(df_cor))
+
+     variaveis <- str_remove(rownames(corr$r),paste0("_",cor_raca))
+     variaveis <- str_remove(variaveis,"_negras")
+
+     corr_r <- corr$r |>
+       as_tibble() |>
+       select(
+         coef_homicidios = indicador_homicidios_negros,
+         coef_intervencao = indicador_intervencao_negros
+       )
+
+     corr_P <- corr$P |>
+       as_tibble() |>
+       select(
+         Pvalue_homicidios = indicador_homicidios_negros,
+         Pvalue_intervencao = indicador_intervencao_negros
+       )
+
+     out_negros <- corr_r |>
+       bind_cols(corr_P) |>
+       mutate(
+         variavel = variaveis,
+         ano = "Total",
+         cor_raca = cor_raca
+       ) |>
+       select(variavel, ano, cor_raca, everything())
+
+     # brancos geral
+     cor_raca = "brancos"
+
+     df_cor <- input |>
+       # filter(ano %in% ano) |>
+       select(ends_with(c(cor_raca,"brancas"))) |>
+       select(-c(indicador_homicidios_negros_maior_brancos, indicador_intervencao_negros_maior_brancos))
+
+     corr <- rcorr(as.matrix(df_cor))
+
+     variaveis <- str_remove(rownames(corr$r),paste0("_",cor_raca))
+     variaveis <- str_remove(variaveis,"_brancas")
+
+     corr_r <- corr$r |>
+       as_tibble() |>
+       select(
+         coef_homicidios = indicador_homicidios_brancos,
+         coef_intervencao = indicador_intervencao_brancos
+       )
+
+     corr_P <- corr$P |>
+       as_tibble() |>
+       select(
+         Pvalue_homicidios = indicador_homicidios_brancos,
+         Pvalue_intervencao = indicador_intervencao_brancos
+       )
+
+     out_brancos <- corr_r |>
+       bind_cols(corr_P) |>
+       mutate(
+         variavel = variaveis,
+         ano = "Total",
+         cor_raca = cor_raca
+       ) |>
+       select(variavel, ano, cor_raca, everything())
+
+     # juntar dados
+
+     output <- out_negros |>
+       bind_rows(out_brancos)
+  }
+  return(output)
+}
+
+df_teste <- func_montar_base_correlacoes(2018)
+
+anos = c(0,2013,2014,2015,2016,2017,2018)
+
+for(i in seq_along(anos)){
+  ano = anos[i]
+
+  df <- func_montar_base_correlacoes(periodo = ano)
+
+  if(i == 1){
+    df_output <- df
+  }else{
+    df_output <- df_output |>
+      bind_rows(df)
+  }
+  print(paste0("Finalizamos para o ano: ",ano,"!!!"))
+}
+
+# Exportacao da base
+
+writexl::write_xlsx(df_output, path = "output/resultados - correlacao.xlsx")
