@@ -1,0 +1,56 @@
+#' ------------------------------------------------------
+#' @author Thiago Cordeiro Almeida
+#' @last-update 2023-10-24
+#' @description Análises exploratórias dos dados completos
+#' -----------------------------------------------------
+options(scipen = 9999999)
+rm(list = ls())
+gc()
+
+# bibliotecas -------------------------------------------------------------
+
+if(!require("pacman")) install.packages(("pacman"))
+pacman::p_load(tidyverse, arrow, openxlsx, Hmisc, corrplot)
+
+# Importacao dos dados ----------------------------------------------------
+DIR <- "./output/base de dados - violencia e desigualdade"
+
+# leitura dos dados
+df <- read_parquet(file = file.path(DIR, "base_violencia_desigualdade.parquet"))
+df_uf <- read_parquet(file = "./output/base de dados - desigualdade/cad_indicadores_uf.parquet")
+
+# Definicao da base de trabalho -------------------------------------------
+
+cods_uf <- tibble(cod = c("11","12","13","14","15","16","17","21","22","23","24","25","26","27",
+                          "28","29","31","32","33","35","41","42","43","50","51","52","53"),
+                  names = c("Rondônia","Acre","Amazonas", "Roraima","Pará","Amapá","Tocantins","Maranhão",
+                            "Piauí", "Ceará","Rio Grande do Norte","Paraíba","Pernambuco","Alagoas","Sergipe",
+                            "Bahia","Minas Gerais","Espírito Santo","Rio de Janeiro","São Paulo","Paraná","Santa Catarina",
+                            "Rio Grande do Sul","Mato Grosso do Sul","Mato Grosso","Goiás","Distrito Federal"))
+
+# Nota: vamos trabalhar somente com os municipios com populacao acima de 5000 habitantes
+df_analises <- df |>
+  mutate(uf = factor(uf, levels = cods_uf$cod, labels = cods_uf$names))
+
+df_uf <- df_uf |>
+  mutate(uf = factor(uf, levels = cods_uf$cod, labels = cods_uf$names))
+
+
+# analise do top X ao longo do tempo --------------------------------------
+
+df_analises |>
+  group_by(cd_municipio_6digitos) |>
+  reframe(
+    ordem = row_number(),
+    ano = ano,
+    regiao = regiao,
+    uf = uf,
+    homicidios = sum(homicidios_geral),
+    intervencoes = sum(intervencao_geral),
+    pop_total = pop_total,
+    indicador_homicidios = homicidios/pop_total*1000,
+    indicador_intervencoes = intervencoes/pop_total*1000
+  ) |>
+  filter(ordem == 1)
+
+# OBS: agora é inserir os de desigualdade e fazer a adaptação de todos.
