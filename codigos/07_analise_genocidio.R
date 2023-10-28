@@ -1,6 +1,6 @@
 #' ------------------------------------------------------
 #' @author Thiago Cordeiro Almeida
-#' @last-update 2023-10-24
+#' @last-update 2023-10-28
 #' @description Análises exploratórias dos dados completos
 #' -----------------------------------------------------
 options(scipen = 9999999)
@@ -17,7 +17,7 @@ DIR <- "./output/base de dados - violencia e desigualdade"
 
 # leitura dos dados
 df <- read_parquet(file = file.path(DIR, "base_violencia_desigualdade.parquet"))
-df_uf <- read_parquet(file = "./output/base de dados - desigualdade/cad_indicadores_uf.parquet")
+# df_uf <- read_parquet(file = "./output/base de dados - desigualdade/cad_indicadores_uf.parquet")
 
 # Definicao da base de trabalho -------------------------------------------
 
@@ -29,28 +29,96 @@ cods_uf <- tibble(cod = c("11","12","13","14","15","16","17","21","22","23","24"
                             "Rio Grande do Sul","Mato Grosso do Sul","Mato Grosso","Goiás","Distrito Federal"))
 
 # Nota: vamos trabalhar somente com os municipios com populacao acima de 5000 habitantes
-df_analises <- df |>
+df <- df |>
   mutate(uf = factor(uf, levels = cods_uf$cod, labels = cods_uf$names))
-
-df_uf <- df_uf |>
-  mutate(uf = factor(uf, levels = cods_uf$cod, labels = cods_uf$names))
-
 
 # analise do top X ao longo do tempo --------------------------------------
 
-df_analises |>
+top50_homicidios <- df |>
   group_by(cd_municipio_6digitos) |>
   reframe(
+    nome_municipio = nome_municipio,
     ordem = row_number(),
     ano = ano,
     regiao = regiao,
     uf = uf,
     homicidios = sum(homicidios_geral),
-    intervencoes = sum(intervencao_geral),
+    # intervencoes = sum(intervencao_geral),
     pop_total = pop_total,
     indicador_homicidios = homicidios/pop_total*1000,
+    # indicador_intervencoes = intervencoes/pop_total*1000
+  ) |>
+  filter(ordem == 1) %>%
+  select(-c(ano, ordem)) %>%
+  arrange(desc(indicador_homicidios)) %>%
+  mutate(ranking = row_number())
+
+top50_intervencoes <- df |>
+  group_by(cd_municipio_6digitos) |>
+  reframe(
+    nome_municipio = nome_municipio,
+    ordem = row_number(),
+    ano = ano,
+    regiao = regiao,
+    uf = uf,
+    # homicidios = sum(homicidios_geral),
+    intervencoes = sum(intervencao_geral),
+    pop_total = pop_total,
+    # indicador_homicidios = homicidios/pop_total*1000,
     indicador_intervencoes = intervencoes/pop_total*1000
   ) |>
-  filter(ordem == 1)
+  filter(ordem == 1) %>%
+  select(-c(ano, ordem)) %>%
+  arrange(desc(indicador_intervencoes)) %>%
+  mutate(ranking = row_number())
 
-# OBS: agora é inserir os de desigualdade e fazer a adaptação de todos.
+
+# Homicidios e intervencoes da populacao negra ----------------------------
+
+top50_homicidios_negros <- df |>
+  group_by(cd_municipio_6digitos) |>
+  reframe(
+    nome_municipio = nome_municipio,
+    ordem = row_number(),
+    ano = ano,
+    regiao = regiao,
+    uf = uf,
+    homicidios = sum(homicidios_negros),
+    # intervencoes = sum(intervencao_geral),
+    pop_total = pop_total,
+    indicador_homicidios_negros = homicidios/pop_total*1000,
+    # indicador_intervencoes = intervencoes/pop_total*1000
+  ) |>
+  filter(ordem == 1) %>%
+  select(-c(ano, ordem)) %>%
+  arrange(desc(indicador_homicidios_negros)) %>%
+  mutate(ranking = row_number()) %>%
+  filter(ranking <= 100)
+
+top50_intervencoes_negros <- df |>
+  group_by(cd_municipio_6digitos) |>
+  reframe(
+    nome_municipio = nome_municipio,
+    ordem = row_number(),
+    ano = ano,
+    regiao = regiao,
+    uf = uf,
+    # homicidios = sum(homicidios_geral),
+    intervencoes = sum(intervencao_negros),
+    pop_total = pop_total,
+    # indicador_homicidios = homicidios/pop_total*1000,
+    indicador_intervencoes_negros = intervencoes/pop_total*1000
+  ) |>
+  filter(ordem == 1) %>%
+  select(-c(ano, ordem)) %>%
+  arrange(desc(indicador_intervencoes_negros)) %>%
+  mutate(ranking = row_number()) %>%
+  filter(ranking <= 50)
+
+# Exportacao dos dados de homicidio e intervencao -------------------------
+
+write_csv(top50_homicidios_negros, file = "./output/resultados/resultados - ranking genocidio populacao negra - homicidios.csv")
+write_csv(top50_intervencoes_negros, file = "./output/resultados/resultados - ranking genocidio populacao negra - intervencao.csv")
+
+write_parquet(top50_homicidios_negros, sink = "./output/resultados/resultados - ranking genocidio populacao negra - homicidios.parquet")
+write_parquet(top50_intervencoes_negros, sink = "./output/resultados/resultados - ranking genocidio populacao negra - intervencao.parquet")
