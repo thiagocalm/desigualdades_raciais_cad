@@ -1,6 +1,6 @@
 #' ------------------------------------------------------
 #' @author Thiago Cordeiro Almeida
-#' @last-update 2023-10-20
+#' @last-update 2023-10-28
 #' @description Juncao das bases de desigualdade e homicidios
 #' -----------------------------------------------------
 options(scipen = 9999999)
@@ -25,7 +25,6 @@ df_pop_municipios <- read_xlsx(
   sheet = 1,
   range = "B3:H5573"
 )
-
 
 # Tratamento da base de populacao -----------------------------------------
 
@@ -64,7 +63,6 @@ df_pop_municipios |>
   summarise(
     pop_faixas = pop_faixas, n = n, prop = 100*n/sum(n)
   )
-
 
 # Tratamento das bases de obitos -------------------------------------------
 
@@ -190,7 +188,11 @@ df_desigualdade_violencia <- df_desigualdade_violencia |>
     ano,regiao,uf,cd_municipio_7digitos,cd_municipio_6digitos,
     nome_municipio,pop_total,pop_faixas,everything()
   ) |>
-  filter(!is.na(nome_municipio))
+  filter(!is.na(nome_municipio)) %>%
+  mutate(
+    uf = case_when(is.na(uf) ~ substr(cd_municipio_6digitos, 1,2), TRUE ~ uf),
+    regiao = case_when(is.na(regiao) ~ substr(cd_municipio_6digitos, 1,1), TRUE ~ regiao),
+  )
 
 # Exportacao dos dados ----------------------------------------------------
 
