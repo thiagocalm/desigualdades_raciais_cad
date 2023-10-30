@@ -116,8 +116,8 @@ for(i in seq_along(municipios)){
         nivel_geografico = nome_municipio
       ) %>%
       select(
-        municipio_top50, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
-        ends_with(c("negros","brancos")), starts_with("razao")
+        municipio_top50, uf, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
+        ends_with(c("negros","negras","brancos","brancas")), starts_with("razao")
       )
   }else{
     top_50_df <- top_50_df %>%
@@ -130,14 +130,78 @@ for(i in seq_along(municipios)){
             nivel_geografico = nome_municipio
           ) %>%
           select(
-            municipio_top50, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
-            ends_with(c("negros","brancos")), starts_with("razao")
+            municipio_top50, uf, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
+            ends_with(c("negros","negras","brancos","brancas")), starts_with("razao")
           )
       )
   }
   print(paste0("Finalizamos o numero ",i," do raking!"))
 }
 
+top_50_df_exportar <- top_50_df %>%
+  mutate(
+    uf = case_when(uf == "Brasil" ~ "-", TRUE ~ uf),
+    nivel_geografico = case_when(
+      nivel_geografico %in% as.vector(cods_uf[,2])[[1]] ~ "UF",
+      nivel_geografico %in% as.vector(top50_homicidios_desigualdades[1:50,2])[[1]] ~ "Municipio",
+      TRUE ~ nivel_geografico
+    )
+  ) %>%
+  select(ranking, municipio_top50, uf, nivel_geografico, homicidios, indicador_homicidios_negros,
+         starts_with("indicador_em"),ends_with("em"),starts_with("indicador_acesso"),ends_with("esgoto"),
+         starts_with("indicador_pbf"),ends_with("pbf"),starts_with("indicador_renda"),ends_with("fontes"),
+         starts_with("indicador_maes"),ends_with("adolescentes"),starts_with("indicador_desocupados"),ends_with("desocupados"),
+         starts_with("indicador_informalidade"),ends_with("informalidade")) %>%
+  pivot_wider(names_from = nivel_geografico, values_from = c(homicidios:razao_informalidade)) %>%
+  group_by(municipio_top50) %>%
+  mutate_all(~ replace_na(.x, 0)) %>% View()
+  mutate(across(c(homicidios_Municipio:razao_informalidade_Brasil), ~ sum(.x))) %>%
+  mutate(id = row_number()) %>%
+  filter(id == 1) %>%
+  select(-id) %>%
+  select(all_of(c(
+    "ranking","municipio_top50","uf","homicidios_Municipio",
+    "indicador_homicidios_negros_Municipio","indicador_em_negros_Municipio",
+    "indicador_em_brancos_Municipio","razao_em_Municipio",
+    "indicador_em_negros_UF","indicador_em_brancos_UF","razao_em_UF",
+    "indicador_em_negros_Brasil","indicador_em_brancos_Brasil","razao_em_Brasil",
+    "indicador_acesso_esgoto_negros_Municipio","indicador_acesso_esgoto_brancos_Municipio",
+    "razao_acesso_esgoto_Municipio",
+    "indicador_acesso_esgoto_negros_UF","indicador_acesso_esgoto_brancos_UF","razao_acesso_esgoto_UF",
+    "indicador_acesso_esgoto_negros_Brasil","indicador_acesso_esgoto_brancos_Brasil",
+    "razao_acesso_esgoto_Brasil",
+    "indicador_pbf_negros_Municipio","indicador_pbf_brancos_Municipio","razao_pbf_Municipio",
+    "indicador_pbf_negros_UF","indicador_pbf_brancos_UF","razao_pbf_UF",
+    "indicador_pbf_negros_Brasil","indicador_pbf_brancos_Brasil","razao_pbf_Brasil",
+    "indicador_renda_outras_fontes_negros_Municipio","indicador_renda_outras_fontes_brancos_Municipio",
+    "razao_renda_outras_fontes_Municipio",
+    "indicador_renda_outras_fontes_negros_UF","indicador_renda_outras_fontes_brancos_UF",
+    "razao_renda_outras_fontes_UF",
+    "indicador_renda_outras_fontes_negros_Brasil","indicador_renda_outras_fontes_brancos_Brasil",
+    "razao_renda_outras_fontes_Brasil",
+    "indicador_maes_adolescentes_negras_Municipio","indicador_maes_adolescentes_brancas_Municipio",
+    "razao_maes_adolescentes_Municipio",
+    "indicador_maes_adolescentes_negras_UF","indicador_maes_adolescentes_brancas_UF",
+    "razao_maes_adolescentes_UF",
+    "indicador_maes_adolescentes_negras_Brasil","indicador_maes_adolescentes_brancas_Brasil",
+    "razao_maes_adolescentes_Brasil",
+    "indicador_desocupados_negros_Municipio","indicador_desocupados_brancos_Municipio",
+    "razao_desocupados_Municipio",
+    "indicador_desocupados_negros_UF","indicador_desocupados_brancos_UF","razao_desocupados_UF",
+    "indicador_desocupados_negros_Brasil","indicador_desocupados_brancos_Brasil",
+    "razao_desocupados_Brasil",
+    "indicador_informalidade_negros_Municipio","indicador_informalidade_brancos_Municipio",
+    "razao_informalidade_Municipio",
+    "indicador_informalidade_negros_UF","indicador_informalidade_brancos_UF",
+    "razao_informalidade_UF",
+    "indicador_informalidade_negros_Brasil","indicador_informalidade_brancos_Brasil",
+    "razao_informalidade_Brasil"
+  )))
+
+# exportar base
+
+write_csv(top_50_df_exportar, file = file.path(DIR_top50,"resultados - Top 50 municipios violencia e desigualdade.csv"))
+rm(top_50_df_exportar)
 # Analises ----------------------------------------------------------------
 
 # 1 - Indicadores da populacao negra em relacao à populacao negra na UF e Brasil.
