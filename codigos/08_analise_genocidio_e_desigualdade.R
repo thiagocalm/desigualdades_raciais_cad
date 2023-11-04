@@ -206,17 +206,52 @@ rm(top_50_df_exportar)
 
 # 1 - Indicadores da populacao negra em relacao à populacao negra na UF e Brasil.
 
-top_50_df %>%
-  filter(ranking == 1) %>%
-  select(-c(starts_with("razao"),ends_with("brancos"),homicidios, indicador_homicidios_negros)) %>%
-  rename_all(~str_remove(.x,"indicador_")) %>%
-  rename_all(~str_remove(.x,"_negros")) %>%
-  select(-municipio_top50) %>%
-  pivot_longer(em:informalidade, names_to = "indicadores", values_to = "valores") %>%
-  ggplot() +
-  aes(x = indicadores, y = valores, color = nivel_geografico) +
-  geom_point() +
-  theme_light()
+for(i in 1:50){
+  plot <- top_50_df %>%
+    filter(ranking == i) %>%
+    select(-c(starts_with("razao"),ends_with("brancos"),homicidios, indicador_homicidios_negros)) %>%
+    rename_all(~str_remove(.x,"indicador_")) %>%
+    rename_all(~str_remove(.x,"_negros")) %>%
+    select(-municipio_top50) %>%
+    pivot_longer(em:informalidade, names_to = "indicadores", values_to = "valores") %>%
+    mutate(indicadores = case_when(
+      indicadores == "em"~ "Ensino Médio",
+      indicadores == "acesso_esgoto"~ "Acesso a Esgoto",
+      indicadores == "pbf"~ "Beneficiário do PBF",
+      indicadores == "renda_outras_fontes"~ "Rendimento de outras fontes",
+      indicadores == "desocupados"~ "Desocupados ou inativo",
+      indicadores == "informalidade"~ "Informalidade"
+    )) |>
+    ggplot() +
+    aes(x = indicadores, y = valores, color = nivel_geografico) +
+    geom_point(size = 4) +
+    theme_light() +
+    scale_color_brewer(palette = "Paired") +
+    labs(
+      title = paste0("Município: ",top_50_df[top_50_df$ranking == i,][1,3][[1]], " (",top_50_df[top_50_df$ranking == i,][2,3][[1]],")"),
+      x = "Indicadores de desigualdade para a população negra",
+      y = "%"
+    ) +
+    theme(
+      legend.title = element_blank(),
+      axis.title = element_text(face = "bold", size = 14, color = "#636363", hjust = 1),
+      # axis.text.x = element_text(size = 12,color = "#636363", angle = 45),
+      axis.text = element_text(size = 12,color = "#636363"),
+      plot.title = element_text(face = "bold", size = 16, color = "#636363", hjust = .05)
+    )
+
+  ggsave(
+    filename = paste0("graf_percentual_pop_negra_ranking_",i,".jpeg"),
+    plot = plot,
+    device = "jpeg",
+    path = file.path(DIR_top50, "graficos - ranking violencia e desigualdade"),
+    width = 13,
+    height = 6,
+    units = "in"
+  )
+  print(paste0("Finalizamos o numero ",i, " do ranking!!!"))
+}
+
 
 # 2 - Indicadores da razao entre a populacao negra e branca no municipio, na UF e no Brasil
 
