@@ -1,7 +1,7 @@
 #' ------------------------------------------------------
 #' @author Thiago Cordeiro Almeida
-#' @last-update 2023-10-28
-#' @description Análises exploratórias dos dados completos
+#' @last-update 2023-11-15
+#' @description Análises do genocídio de jovens negros (100 principais municípios)
 #' -----------------------------------------------------
 options(scipen = 9999999)
 rm(list = ls())
@@ -34,7 +34,7 @@ df <- df |>
 
 # analise do top X ao longo do tempo --------------------------------------
 
-top50_homicidios <- df |>
+top100_homicidios <- df |>
   group_by(cd_municipio_6digitos) |>
   reframe(
     nome_municipio = nome_municipio,
@@ -53,7 +53,7 @@ top50_homicidios <- df |>
   arrange(desc(indicador_homicidios)) %>%
   mutate(ranking = row_number())
 
-top50_intervencoes <- df |>
+top100_intervencoes <- df |>
   group_by(cd_municipio_6digitos) |>
   reframe(
     nome_municipio = nome_municipio,
@@ -72,10 +72,9 @@ top50_intervencoes <- df |>
   arrange(desc(indicador_intervencoes)) %>%
   mutate(ranking = row_number())
 
-
 # Homicidios e intervencoes da populacao negra ----------------------------
 
-top50_homicidios_negros <- df |>
+top100_homicidios_negros <- df |>
   group_by(cd_municipio_6digitos) |>
   reframe(
     nome_municipio = nome_municipio,
@@ -95,7 +94,7 @@ top50_homicidios_negros <- df |>
   mutate(ranking = row_number()) %>%
   filter(ranking <= 100)
 
-top50_intervencoes_negros <- df |>
+top100_intervencoes_negros <- df |>
   group_by(cd_municipio_6digitos) |>
   reframe(
     nome_municipio = nome_municipio,
@@ -113,12 +112,12 @@ top50_intervencoes_negros <- df |>
   select(-c(ano, ordem)) %>%
   arrange(desc(indicador_intervencoes_negros)) %>%
   mutate(ranking = row_number()) %>%
-  filter(ranking <= 50)
+  filter(ranking <= 100)
 
 # Exportacao dos dados de homicidio e intervencao -------------------------
 
-write_csv(top50_homicidios_negros, file = "./output/resultados/resultados - ranking genocidio populacao negra - homicidios.csv")
-write_csv(top50_intervencoes_negros, file = "./output/resultados/resultados - ranking genocidio populacao negra - intervencao.csv")
+write_csv(top100_homicidios_negros, file = "./output/resultados/resultados - ranking genocidio populacao negra - homicidios.csv")
+write_csv(top100_intervencoes_negros, file = "./output/resultados/resultados - ranking genocidio populacao negra - intervencao.csv")
 
-write_parquet(top50_homicidios_negros, sink = "./output/resultados/resultados - ranking genocidio populacao negra - homicidios.parquet")
-write_parquet(top50_intervencoes_negros, sink = "./output/resultados/resultados - ranking genocidio populacao negra - intervencao.parquet")
+write_parquet(top100_homicidios_negros, sink = "./output/resultados/resultados - ranking genocidio populacao negra - homicidios.parquet")
+write_parquet(top100_intervencoes_negros, sink = "./output/resultados/resultados - ranking genocidio populacao negra - intervencao.parquet")
