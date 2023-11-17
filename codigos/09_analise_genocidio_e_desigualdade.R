@@ -156,7 +156,7 @@ for(i in seq_along(municipios)){
         nivel_geografico = nome_municipio
       ) %>%
       select(
-        municipio_top100, uf, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
+        cd_municipio_6digitos, municipio_top100, uf, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
         ends_with(c("negros","negras","brancos","brancas","negra","rural")), starts_with("razao")
       )
   }else{
@@ -170,7 +170,7 @@ for(i in seq_along(municipios)){
             nivel_geografico = nome_municipio
           ) %>%
           select(
-            municipio_top100, uf, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
+            cd_municipio_6digitos, municipio_top100, uf, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
             ends_with(c("negros","negras","brancos","brancas","negra","rural")), starts_with("razao")
           )
       )
@@ -178,7 +178,7 @@ for(i in seq_along(municipios)){
   print(paste0("Finalizamos o numero ",i," do raking!"))
 }
 
-top_100_df_exportar <- top_100_df %>%
+top_100_df <- top_100_df %>%
   mutate(
     uf = case_when(uf == "Brasil" ~ "-", TRUE ~ uf),
     nivel_geografico = case_when(
@@ -187,12 +187,15 @@ top_100_df_exportar <- top_100_df %>%
       TRUE ~ nivel_geografico
     )
   ) %>%
-  select(ranking, municipio_top100, uf, nivel_geografico, homicidios, indicador_homicidios_negros,
+  select(ranking, municipio_top100, cd_municipio_6digitos, uf, nivel_geografico, homicidios, indicador_homicidios_negros,
          starts_with("indicador_pop"),
          starts_with("indicador_em"),ends_with("em"),starts_with("indicador_acesso"),ends_with("esgoto"),
          starts_with("indicador_pbf"),ends_with("pbf"),starts_with("indicador_renda"),ends_with("fontes"),
          starts_with("indicador_maes"),ends_with("adolescentes"),starts_with("indicador_desocupados"),ends_with("desocupados"),
-         starts_with("indicador_informalidade"),ends_with("informalidade")) %>%
+         starts_with("indicador_informalidade"),ends_with("informalidade"))
+
+top_100_df_exportar <- top_100_df %>%
+  select(-cd_municipio_6digitos) %>%
   pivot_wider(names_from = nivel_geografico, values_from = c(homicidios:razao_informalidade)) %>%
   group_by(municipio_top100) %>%
   mutate_all(~ replace_na(.x, 0)) %>%
@@ -247,6 +250,8 @@ top_100_df_exportar <- top_100_df %>%
 
 write_csv(top_100_df_exportar, file = file.path(DIR_top100,"resultados - Top 100 municipios violencia e desigualdade.csv"))
 rm(top_100_df_exportar)
+
+write_parquet(top_100_df, sink = file.path(DIR_top100,"base de dados - Top 100 municipios violencia e desigualdade.parquet"))
 
 # Analises ----------------------------------------------------------------
 
