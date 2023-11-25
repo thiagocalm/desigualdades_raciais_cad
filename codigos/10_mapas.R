@@ -1,7 +1,8 @@
 #' ------------------------------------------------------
 #' @author Thiago Cordeiro Almeida
-#' @last-update 2023-11-17
+#' @last-update 2023-11-25
 #' @description Mapas
+#' @update-description Mapas para o ranking ajustado para a pop. negra jovem em municipios com ao menos 5mil hab.
 #' -----------------------------------------------------
 options(scipen = 9999999)
 rm(list = ls())
@@ -15,7 +16,7 @@ pacman::p_load(tidyverse, arrow, openxlsx, geobr, sf, ggspatial, ggrepel)
 # Importacao dos dados ----------------------------------------------------
 DIR_top100 <- "./output/resultados"
 DIR <- "./output/base de dados - violencia e desigualdade"
-DIR_output <- "./output/resultados/mapas"
+DIR_output <- file.path("./output/resultados/mapas","Top 100 ponderado pela pop. jovem negra em munic acima de 5mil hab")
 
 # leitura dos dados
 
@@ -23,7 +24,11 @@ df <- read_parquet(file = file.path(DIR, "base_violencia_desigualdade.parquet"))
 #df_uf <- read_parquet(file = "./output/base de dados - desigualdade/cad_indicadores_uf.parquet")
 #df_br <- read_parquet(file = "./output/base de dados - desigualdade/cad_indicadores_br.parquet")
 df_pop_2010 <- read_parquet(file = "./output/base de dados - desigualdade/pop_2010_indicadores.parquet")
-top100_df <- read_parquet(file = file.path(DIR_top100,"base de dados - Top 100 municipios violencia e desigualdade.parquet"))
+top100_df <- read_parquet(file = file.path(
+  DIR_top100,
+  "tabelas complementares",
+  "base de dados - Top 100 municipios violencia e desigualdade  - ajustado por pop jovem negra em munic acima de 5mil hab [2023.11.25].parquet"
+))
 
 # Importação dos shapes ---------------------------------------------------
 
@@ -55,7 +60,7 @@ df_total <- df %>%
         cd_municipio_6digitos = as.numeric(substr(codigo_geografico, 1,6)),
         regiao = substr(codigo_geografico, 1,1)
       ) %>%
-      select(-c(nivel_geografico, codigo_geografico)),
+      select(-c(nivel_geografico, codigo_geografico, starts_with("prop"))),
     by = c("regiao","cd_municipio_6digitos"),
     keep = FALSE
   ) %>%
@@ -470,7 +475,7 @@ ggsave(
 
 #'---------------------------------------------------------------------------------
 
-# 6 - Casos de homicídio (absolutos) para 2013, 2017, 2021
+# 6 - Casos de homicídio (absolutos) para 2013, 2021
 
 df_shape_munic_homicidio |>
   filter(ano %in% c(2013, 2021)) %>%
