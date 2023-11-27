@@ -1,8 +1,8 @@
 #' ------------------------------------------------------
 #' @author Thiago Cordeiro Almeida
-#' @last-update 2023-11-25
+#' @last-update 2023-11-27
 #' @description Análise dos indicadores de desigualdade para o Top 100 de genocidio negro
-#' @update-description Ranking refeito para municípios ponderados pela população negra jovem
+#' @update-description Gráficos da distribuição das características de desigualdade refeitos para os municipios
 #' -----------------------------------------------------
 options(scipen = 9999999)
 rm(list = ls())
@@ -18,7 +18,13 @@ DIR_top100 <- "./output/resultados"
 DIR <- "./output/base de dados - violencia e desigualdade"
 # leitura dos dados
 
-top100_homicidios <- read_parquet(file = file.path(DIR_top100,"tabelas complementares", "resultados - ranking genocidio populacao negra - homicidios por pop negra jovem em munic maior 5k.parquet"))
+top100_homicidios <- read_parquet(
+  file = file.path(
+    DIR_top100,
+    "tabelas complementares",
+    "resultados - ranking genocidio populacao negra - homicidios por pop negra jovem em munic maior 5k.parquet"
+  )
+)
 
 df <- read_parquet(file = file.path(DIR, "base_violencia_desigualdade.parquet"))
 df_uf <- read_parquet(file = "./output/base de dados - desigualdade/cad_indicadores_uf.parquet")
@@ -258,15 +264,26 @@ top_100_df_exportar <- top_100_df %>%
 
 # exportar base
 
-write_csv(top_100_df_exportar, file = file.path(DIR_top100,"resultados - Top 100 municipios violencia e desigualdade - ajustado por pop jovem negra em munic acima de 5mil hab [2023.11.25].csv"))
+write_csv(
+  top_100_df_exportar,
+  file = file.path(
+    DIR_top100,
+    "resultados - Top 100 municipios violencia e desigualdade - ajustado por pop jovem negra em munic acima de 5mil hab [2023.11.25].csv"
+  )
+)
 rm(top_100_df_exportar)
 
-write_parquet(top_100_df, sink = file.path(DIR_top100,"base de dados - Top 100 municipios violencia e desigualdade  - ajustado por pop jovem negra em munic acima de 5mil hab [2023.11.25].parquet"))
+write_parquet(
+  top_100_df,
+  sink = file.path(
+    DIR_top100,
+    "base de dados - Top 100 municipios violencia e desigualdade  - ajustado por pop jovem negra em munic acima de 5mil hab [2023.11.25].parquet"
+  )
+)
 
 # Analises ----------------------------------------------------------------
 
 # 1 - Indicadores da populacao negra em relacao à populacao negra na UF e Brasil.
-i = 1
 
 # definindo paleta de cores
 cols = c(
@@ -332,19 +349,16 @@ for(i in 1:100){
   print(paste0("Finalizamos o numero ",i, " do ranking!!!"))
 }
 
-
 # 2 - Indicadores da razao entre a populacao negra e branca no municipio, na UF e no Brasil
-
-top_50_df %>%
-  filter(ranking == 1) %>%
-  select(-c(starts_with("indicador_"),homicidios)) %>%
-  rename_all(~str_remove(.x,"razao_")) %>%
-  select(-municipio_top50) %>%
-  pivot_longer(em:informalidade, names_to = "razoes_negros_brancos", values_to = "valores") %>%
-  ggplot() +
-  aes(x = razoes_negros_brancos, y = valores, color = nivel_geografico) +
-  geom_point() +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "black", alpha = .8, linewidth = 1.07) +
-  theme_light()
-
-## Agora é salvar, organizar tabela e pensar como replicar os gráficos para todos os municipios E SALVAR NA PASTA
+# OBS: Standby por enquanto
+# top_50_df %>%
+#   filter(ranking == 1) %>%
+#   select(-c(starts_with("indicador_"),homicidios)) %>%
+#   rename_all(~str_remove(.x,"razao_")) %>%
+#   select(-municipio_top50) %>%
+#   pivot_longer(em:informalidade, names_to = "razoes_negros_brancos", values_to = "valores") %>%
+#   ggplot() +
+#   aes(x = razoes_negros_brancos, y = valores, color = nivel_geografico) +
+#   geom_point() +
+#   geom_hline(yintercept = 1, linetype = "dashed", color = "black", alpha = .8, linewidth = 1.07) +
+#   theme_light()
