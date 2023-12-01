@@ -10,7 +10,7 @@ gc()
 # bibliotecas -------------------------------------------------------------
 
 if(!require("pacman")) install.packages(("pacman"))
-pacman::p_load(tidyverse, arrow, openxlsx, Hmisc, corrplot)
+pacman::p_load(tidyverse, arrow, openxlsx, Hmisc, corrplot, readxl)
 
 # Importacao dos dados ----------------------------------------------------
 DIR <- "./output/base de dados - violencia e desigualdade"
@@ -18,6 +18,7 @@ DIR <- "./output/base de dados - violencia e desigualdade"
 # leitura dos dados
 df <- read_parquet(file = file.path(DIR, "base_violencia_desigualdade.parquet"))
 df_uf <- read_parquet(file = "./output/base de dados - desigualdade/cad_indicadores_uf.parquet")
+df_homicidios <- read_xlsx("./output/base de dados - violencia/HomicidiosMunicipio.xlsx")
 
 # Definicao da base de trabalho -------------------------------------------
 
@@ -791,3 +792,66 @@ for(i in seq_along(anos)){
 # Exportacao da base
 
 writexl::write_xlsx(df_output, path = "output/resultados - correlacao.xlsx")
+
+
+# Analise dos dados de violência ------------------------------------------
+
+df_homicidios_sav <- haven::read_sav("./output/base de dados - violencia/Homicidios.sav")
+
+# Pela nossa base
+df_homicidios %>%
+  summarise(Absoluto = sum(TotalRacaH), .by = Ano) %>%
+  mutate(Ano = as.character(Ano)) %>%
+  bind_rows(
+    df_homicidios %>%
+      summarise(
+        Ano = "Total",
+        Absoluto = sum(TotalRacaH)
+      )
+  )
+
+## Pela base mais bruta do Marcio
+
+# Número absoluto de homicídios por ano (independente de idade e raça)
+# OBS.: Chega bem próximo do que o Atlas da Violência encontrou para 2017 (65.602).
+
+df_homicidios_sav %>%
+  filter(homicidio == 1 & Faixa_etaria %in% 1:9) %>%
+  summarise(Absoluto = n(), .by = Ano) %>%
+  bind_rows(
+    df_homicidios_sav %>%
+      filter(homicidio == 1 & Faixa_etaria %in% 1:9) %>%
+      summarise(
+        Ano = "Total",
+        Absoluto = n()
+      )
+  )
+
+# Distribuição por causa externa incluída nos homicídios
+df_homicidios_sav %>%
+  filter(homicidio == 1 & Faixa_etaria %in% 1:9) %>%
+  summarise(Absoluto = n(), .by = causext) %>%
+  arrange(causext)
+
+# Distribuição dos homicídios por local de ocorrência
+
+df_homicidios_sav %>%
+  filter(homicidio == 1 & Faixa_etaria %in% 1:9) %>%
+  summarise(Absoluto = n(), .by = lococor)
+
+# Distribuição dos óbitos sem raça declarada
+# OBS.: 3.5% dos homicídios (17.772) não tinham a raça ou cor declarada
+
+df_homicidios_sav %>%
+  mutate(raca_identificada = case_when(racacor %in% c("","9") ~ "Não", TRUE ~ "Sim")) %>%
+  summarise(Absoluto = n(), .by = raca_identificada) %>%
+  mutate(Relativo = Absoluto/sum(Absoluto)*100)
+
+# Por ano
+# OBS.: Ao longo dos anos, houve uma redução dos homicídios sem declaração da raça de 6.5% em 2013 para 1.7% em 2021
+
+df_homicidios_sav %>%
+  mutate(raca_identificada = case_when(racacor %in% c("","9") ~ "Não", TRUE ~ "Sim")) %>%
+  summarise(Absoluto = n(), .by = c(Ano,raca_identificada)) %>%
+  group_by(Ano) %>%
+  mutate(Relativo = Absoluto/sum(Absoluto)*100)
