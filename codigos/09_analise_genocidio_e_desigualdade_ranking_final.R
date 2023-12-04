@@ -22,6 +22,7 @@ DIR <- "./output/base de dados - violencia e desigualdade"
 top50_homicidios <- read_parquet(
   file = file.path(
     DIR_top50,
+    "tabelas complementares",
     "resultados - ranking genocidio populacao negra - homicidios da população jovem negra [lista final].parquet"
   )
 )
@@ -291,23 +292,23 @@ write_parquet(
 cols = c(
   "#a6cee3",
   rep("#1f78b4",27),
-  rep("#b2df8a", 100)
+  rep("#b2df8a", 50)
 )
 
 names(cols) = c("Brasil",cods_uf[,2][[1]],municipios)
 
-for(i in 1:100){
+for(i in 1:50){
   # criacao de vetor de atribuicao de cores
-  color_selection = top_100_df %>% filter(ranking == i)
+  color_selection = top_50_df %>% filter(ranking == i)
   colors = cols[names(cols) %in% color_selection[,5][[1]]]
   # criacao de grafico
-  plot <- top_100_df %>%
-    select(-ends_with(c("_negras","_brancas"))) %>%
+  plot <- top_50_df %>%
+    select(-ends_with(c("_negras","_brancas","total","jovem_negra"))) %>%
     filter(ranking == i) %>%
     select(-c(starts_with("razao"),ends_with("brancos"),homicidios, indicador_homicidios_negros)) %>%
     rename_all(~str_remove(.x,"indicador_")) %>%
     rename_all(~str_remove(.x,"_negros")) %>%
-    select(-municipio_top100) %>%
+    select(-municipio_top50) %>%
     pivot_longer(pop_negra:informalidade, names_to = "indicadores", values_to = "valores") %>%
     mutate(indicadores = case_when(
       indicadores == "pop_negra"~ "Pop. negra",
@@ -327,7 +328,7 @@ for(i in 1:100){
     scale_y_continuous(breaks = seq(0,100,10)) +
     scale_fill_manual(values = colors) +
     labs(
-      title = paste0("Município: ",top_100_df[top_100_df$ranking == i,][1,5][[1]], " (",top_100_df[top_100_df$ranking == i,][2,5][[1]],")"),
+      title = paste0("Município: ",top_50_df[top_50_df$ranking == i,][1,5][[1]], " (",top_50_df[top_50_df$ranking == i,][2,5][[1]],")"),
       x = "Indicadores de desigualdade para a população negra",
       y = "%"
     ) +
@@ -343,7 +344,7 @@ for(i in 1:100){
     filename = paste0("graf_percentual_pop_negra_ranking_",i,".jpeg"),
     plot = plot,
     device = "jpeg",
-    path = file.path(DIR_top100, "graficos - ranking violencia e desigualdade"),
+    path = file.path(DIR_top50, "graficos - ranking violencia e desigualdade"),
     width = 16,
     height = 9,
     units = "in"
@@ -351,16 +352,5 @@ for(i in 1:100){
   print(paste0("Finalizamos o numero ",i, " do ranking!!!"))
 }
 
-# 2 - Indicadores da razao entre a populacao negra e branca no municipio, na UF e no Brasil
-# OBS: Standby por enquanto
-# top_50_df %>%
-#   filter(ranking == 1) %>%
-#   select(-c(starts_with("indicador_"),homicidios)) %>%
-#   rename_all(~str_remove(.x,"razao_")) %>%
-#   select(-municipio_top50) %>%
-#   pivot_longer(em:informalidade, names_to = "razoes_negros_brancos", values_to = "valores") %>%
-#   ggplot() +
-#   aes(x = razoes_negros_brancos, y = valores, color = nivel_geografico) +
-#   geom_point() +
-#   geom_hline(yintercept = 1, linetype = "dashed", color = "black", alpha = .8, linewidth = 1.07) +
-#   theme_light()
+# 2 - Correlação entre
+
