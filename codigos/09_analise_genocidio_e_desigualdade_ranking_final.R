@@ -352,5 +352,175 @@ for(i in 1:50){
   print(paste0("Finalizamos o numero ",i, " do ranking!!!"))
 }
 
-# 2 - Correlação entre
+# 2.1 - Correlação entre indicadores UF e indicadores Municipais - GERAL
 
+top_50_df %>%
+  filter(nivel_geografico_2 != "Brasil") %>%
+  select(-c(
+    ends_with(c("_negras","_brancas","total","jovem_negra")),
+    starts_with("razao"),ends_with("brancos"),homicidios, indicador_homicidios_negros,
+    cd_municipio_6digitos, nivel_geografico, ends_with(c("_rural","_negra"))
+  )) %>%
+  rename_all(~str_remove(.x,"indicador_")) %>%
+  rename_all(~str_remove(.x,"_negros")) %>%
+  pivot_longer(
+    em:informalidade,
+    names_to = "indicadores",
+    values_to = "valor"
+  ) %>%
+  mutate(indicadores = case_when(
+    # indicadores == "pop_negra"~ "Pop. negra",
+    # indicadores == "pop_rural"~ "Pop. rural",
+    indicadores == "em"~ "Ensino Médio",
+    indicadores == "acesso_esgoto"~ "Acesso a Esgoto",
+    indicadores == "pbf"~ "Beneficiário do PBF",
+    indicadores == "renda_outras_fontes"~ "Rendimento (outras fontes)",
+    indicadores == "desocupados"~ "Desocupados ou inativo",
+    indicadores == "informalidade"~ "Informalidade"
+  )) %>%
+  pivot_wider(names_from = nivel_geografico_2, values_from = valor) %>%
+  ggplot() +
+  aes(x = UF, y = Municipio, group = indicadores, fill = indicadores) +
+  geom_point(size = 4, alpha = .7, shape = 21, color = "#f0f0f0") +
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
+  theme_light() +
+  coord_cartesian(ylim = c(0,100), xlim = c(0,100)) +
+  scale_y_continuous(breaks = seq(0,100,10)) +
+  scale_x_continuous(breaks = seq(0,100,10)) +
+  scale_fill_brewer(palette = "Set2") +
+  # labs(
+  #   title = paste0("Município: ",top_50_df[top_50_df$ranking == i,][1,5][[1]], " (",top_50_df[top_50_df$ranking == i,][2,5][[1]],")"),
+  #   x = "Indicadores de desigualdade para a população negra",
+  #   y = "%"
+  # ) +
+  theme(
+    legend.title = element_blank(),
+    axis.title = element_text(face = "bold", size = 12, color = "#636363", hjust = 1),
+    axis.text.y = element_text(size = 10,color = "#636363"),
+    axis.text.x = element_text(size = 10,color = "#636363"),
+    plot.title = element_text(face = "bold", size = 16, color = "#636363", hjust = .05)
+  )
+
+ggsave(
+  filename = paste0("graf_associacao_Municipios_UF_GERAL.jpeg"),
+  device = "jpeg",
+  path = file.path(DIR_top50, "graficos - ranking violencia e desigualdade"),
+  width = 16,
+  height = 9,
+  units = "in"
+)
+
+# 2.2 - Correlação entre indicadores UF e indicadores Municipais - POR UF
+
+top_50_df %>%
+  filter(nivel_geografico_2 != "Brasil") %>%
+  select(-c(
+    ends_with(c("_negras","_brancas","total","jovem_negra")),
+    starts_with("razao"),ends_with("brancos"),homicidios, indicador_homicidios_negros,
+    cd_municipio_6digitos, nivel_geografico, ends_with(c("_rural","_negra"))
+  )) %>%
+  rename_all(~str_remove(.x,"indicador_")) %>%
+  rename_all(~str_remove(.x,"_negros")) %>%
+  pivot_longer(
+    em:informalidade,
+    names_to = "indicadores",
+    values_to = "valor"
+  ) %>%
+  mutate(indicadores = case_when(
+    # indicadores == "pop_negra"~ "Pop. negra",
+    # indicadores == "pop_rural"~ "Pop. rural",
+    indicadores == "em"~ "Ensino Médio",
+    indicadores == "acesso_esgoto"~ "Acesso a Esgoto",
+    indicadores == "pbf"~ "Beneficiário do PBF",
+    indicadores == "renda_outras_fontes"~ "Rendimento (outras fontes)",
+    indicadores == "desocupados"~ "Desocupados ou inativo",
+    indicadores == "informalidade"~ "Informalidade"
+  )) %>%
+  pivot_wider(names_from = nivel_geografico_2, values_from = valor) %>%
+  ggplot() +
+  aes(x = UF, y = Municipio, group = indicadores, fill = indicadores) +
+  geom_point(size = 4, alpha = .7, shape = 21, color = "#f0f0f0") +
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
+  theme_light() +
+  coord_cartesian(ylim = c(0,100), xlim = c(0,100)) +
+  scale_y_continuous(breaks = seq(0,100,10)) +
+  scale_x_continuous(breaks = seq(0,100,10)) +
+  lemon::facet_rep_wrap(uf ~ ., repeat.tick.labels = TRUE) +
+  scale_fill_brewer(palette = "Set2") +
+  # labs(
+  #   title = paste0("Município: ",top_50_df[top_50_df$ranking == i,][1,5][[1]], " (",top_50_df[top_50_df$ranking == i,][2,5][[1]],")"),
+  #   x = "Indicadores de desigualdade para a população negra",
+  #   y = "%"
+  # ) +
+  theme(
+    legend.title = element_blank(),
+    axis.title = element_text(face = "bold", size = 12, color = "#636363", hjust = 1),
+    axis.text.y = element_text(size = 10,color = "#636363"),
+    axis.text.x = element_text(size = 10,color = "#636363"),
+    plot.title = element_text(face = "bold", size = 16, color = "#636363", hjust = .05)
+  )
+
+ggsave(
+  filename = paste0("graf_associacao_Municipios_UF_POR_UF.jpeg"),
+  device = "jpeg",
+  path = file.path(DIR_top50, "graficos - ranking violencia e desigualdade"),
+  width = 16,
+  height = 9,
+  units = "in"
+)
+
+# 3 - indicadores por UF
+
+# definindo paleta de cores
+cols = c("#1f78b4","#b2df8a")
+
+names(cols) = c("UF","Municipio")
+
+# criacao de grafico
+top_50_df %>%
+  filter(uf != "-") %>%
+  select(-ends_with(c("_negras","_brancas","total","jovem_negra"))) %>%
+  select(-c(starts_with("razao"),ends_with("brancos"),homicidios, indicador_homicidios_negros)) %>%
+  rename_all(~str_remove(.x,"indicador_")) %>%
+  rename_all(~str_remove(.x,"_negros")) %>%
+  select(-municipio_top50) %>%
+  pivot_longer(pop_negra:informalidade, names_to = "indicadores", values_to = "valores") %>%
+  mutate(indicadores = case_when(
+    indicadores == "pop_negra"~ "Pop. negra",
+    indicadores == "pop_rural"~ "Pop. rural",
+    indicadores == "em"~ "Ensino Médio",
+    indicadores == "acesso_esgoto"~ "Acesso a Esgoto",
+    indicadores == "pbf"~ "Beneficiário do PBF",
+    indicadores == "renda_outras_fontes"~ "Rendimento (outras fontes)",
+    indicadores == "desocupados"~ "Desocupados ou inativo",
+    indicadores == "informalidade"~ "Informalidade"
+  )) |>
+  ggplot() +
+  aes(x = indicadores, y = valores, fill = nivel_geografico_2) +
+  geom_point(size = 4, alpha = .8, shape = 21, color = "#f0f0f0") +
+  theme_light() +
+  coord_cartesian(ylim = c(0,100)) +
+  scale_y_continuous(breaks = seq(0,100,10)) +
+  scale_fill_manual(values = cols) +
+  lemon::facet_rep_wrap(uf ~ ., repeat.tick.labels = TRUE) +
+  scale_x_discrete(labels = function(x) str_wrap(str_replace_all(x, " ", " "), width = 3)) +
+  labs(
+    x = "Indicadores de desigualdade para a população negra",
+    y = "%"
+  ) +
+  theme(
+    legend.title = element_blank(),
+    axis.title = element_text(face = "bold", size = 12, color = "#636363", hjust = 1),
+    axis.text.y = element_text(size = 10,color = "#636363"),
+    axis.text.x = element_text(size = 8,color = "#636363"),
+    plot.title = element_text(face = "bold", size = 16, color = "#636363", hjust = .05)
+  )
+
+ggsave(
+  filename = "graf_indicadores_desigualdade_POR_UF.jpeg",
+  device = "jpeg",
+  path = file.path(DIR_top50, "graficos - ranking violencia e desigualdade"),
+  width = 22,
+  height = 11,
+  units = "in"
+)
