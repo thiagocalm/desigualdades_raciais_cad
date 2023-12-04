@@ -1,8 +1,8 @@
 #' ------------------------------------------------------
 #' @author Thiago Cordeiro Almeida
 #' @last-update 2023-12-03
-#' @description Análise dos indicadores de desigualdade para o Top 50 de genocidio negro criado pelo Danilo
-#' @update-description Pegar a lista do Danilo, incluir as variáveis de de desigualdade e fazer todo o tratamento
+#' @description Construção da lista do top 50 após a avaliação final do Danilo
+#' @update-description Inclusão dos indicadores de desigualdade e contexto
 #' -----------------------------------------------------
 options(scipen = 9999999)
 rm(list = ls())
@@ -11,17 +11,19 @@ gc()
 # bibliotecas -------------------------------------------------------------
 
 if(!require("pacman")) install.packages(("pacman"))
-pacman::p_load(tidyverse, arrow, openxlsx, readxl)
+pacman::p_load(tidyverse, arrow, openxlsx)
 
 # Importacao dos dados ----------------------------------------------------
 DIR_top50 <- "./output/resultados"
 DIR <- "./output/base de dados - violencia e desigualdade"
+
 # leitura dos dados
 
-top50_homicidios <- readxl::read_xlsx(
-  path = file.path(DIR_top50,"resultados - ranking dos 50 municipios - violencia e desigualdade.xlsx"),
-  sheet = 2,
-  range = "B5:F55"
+top50_homicidios <- read_parquet(
+  file = file.path(
+    DIR_top50,
+    "resultados - ranking genocidio populacao negra - homicidios da população jovem negra [lista final].parquet"
+  )
 )
 
 df <- read_parquet(file = file.path(DIR, "base_violencia_desigualdade.parquet"))
@@ -57,9 +59,7 @@ df <- df %>%
         cd_municipio_6digitos = as.numeric(substr(codigo_geografico, 1,6)),
         regiao = substr(codigo_geografico, 1,1),
         uf = substr(codigo_geografico, 1,2),
-        uf = factor(uf, levels = cods_uf$cod, labels = cods_uf$names),
-        prop_pop_negra_jovem = prop_pop_negra_jovem/100,
-        pop_jovem_negra = pop_total * prop_pop_negra_jovem
+        uf = factor(uf, levels = cods_uf$cod, labels = cods_uf$names)
       ) %>%
       select(-c(nivel_geografico, codigo_geografico, starts_with("prop"))),
     by = c("regiao", "uf","cd_municipio_6digitos"),
@@ -73,9 +73,7 @@ df_uf <- df_uf %>%
       mutate(
         regiao = substr(codigo_geografico, 1,1),
         uf = substr(codigo_geografico, 1,2),
-        uf = factor(uf, levels = cods_uf$cod, labels = cods_uf$names),
-        prop_pop_negra_jovem = prop_pop_negra_jovem/100,
-        pop_jovem_negra = pop_total * prop_pop_negra_jovem
+        uf = factor(uf, levels = cods_uf$cod, labels = cods_uf$names)
       ) %>%
       select(-c(nivel_geografico, codigo_geografico, starts_with("prop"))),
     by = c("regiao", "uf"),
@@ -86,10 +84,6 @@ df_br <- df_br %>%
   bind_cols(
     df_pop_2010 %>%
       filter(nivel_geografico == "Brasil") %>%
-      mutate(
-        prop_pop_negra_jovem = prop_pop_negra_jovem/100,
-        pop_jovem_negra = pop_total * prop_pop_negra_jovem
-      ) %>%
       select(-c(nivel_geografico, codigo_geografico, starts_with("prop")))
   )
 
@@ -121,21 +115,14 @@ df_br <- df_br %>%
 # Construindo base de indicadores de desigualdade para o top 50 -----------
 
 top50_homicidios_desigualdades <- top50_homicidios %>%
-  rename(
-    ranking = `Número no ranking`,
-    municipio = Município,
-    uf = `Estado/UF`,
-    homicidios = Absoluto,
-    taxa_homicidios = `Podenrado pela população`
-  ) %>%
   left_join(
-    df %>% select(-c(cd_municipio_6digitos, regiao)),
-    by = c("municipio" = "nome_municipio", "uf" = "uf")
-  ) %>% View()
+    df %>% select(-c(nome_municipio, uf, regiao)),
+    by = c("cd_municipio_6digitos")
+  ) %>%
   mutate(nivel_geografico = "municipio") %>%
   bind_rows(
     df_uf %>%
-      filter(uf %in% top100_homicidios$uf) %>%
+      filter(uf %in% top50_homicidios$uf) %>%
       mutate(nivel_geografico = "uf")
   ) %>%
   bind_rows(
@@ -154,73 +141,74 @@ top50_homicidios_desigualdades <- top50_homicidios %>%
 
 # Organizando a base
 
-top100_homicidios_desigualdades <- top100_homicidios_desigualdades %>%
+top50_homicidios_desigualdades <- top50_homicidios_desigualdades %>%
+  rename(
+    nome_municipio = municipio,
+    indicador_homicidios_negros = indicador_homicidios
+  ) %>%
   mutate(
     uf = case_when(is.na(uf) ~ "Brasil", TRUE ~ uf),
     nome_municipio = case_when(is.na(nome_municipio) ~ uf, TRUE ~ nome_municipio)
   )
 
-municipios <-  as.vector(top100_homicidios$nome_municipio[1:100])
+municipios <-  top50_homicidios %>% select(municipio) %>% pull()
 
 for(i in seq_along(municipios)){
-  municipio  <-  as.vector(top100_homicidios$nome_municipio[i])
-  uf_munic <-  as.vector(top100_homicidios_desigualdades[i,4])[[1]]
+  municipio  <-  as.vector(top50_homicidios$municipio[i])
+  uf_munic <-  as.vector(top50_homicidios_desigualdades[i,3])[[1]]
   if(i == 1){
-    top_100_df <- top100_homicidios_desigualdades %>%
-      # filter(nome_municipio %in% c(municipio, uf_minc, "Brasil")) %>%
+    top_50_df <- top50_homicidios_desigualdades %>%
       filter(nome_municipio == municipio & uf == uf_munic |
                nome_municipio == uf_munic |
                nome_municipio == "Brasil") %>%
       mutate(
         ranking = i,
-        municipio_top100 = municipio,
-        nivel_geografico = nome_municipio
+        municipio_top50 = municipio,
+        nivel_geografico = nome_municipio,
       ) %>%
-      select(-any_of("pop_jovem_negra")) %>%
       select(
-        cd_municipio_6digitos, municipio_top100, uf, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
-        ends_with(c("negros","negras","brancos","brancas","negra","rural")), starts_with("razao")
+        cd_municipio_6digitos, uf, municipio_top50, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
+        starts_with("pop"),ends_with(c("negros","negras","brancos","brancas","negra","rural")), starts_with("razao")
       )
   }else{
-    top_100_df <- top_100_df %>%
+    top_50_df <- top_50_df %>%
       bind_rows(
-        top100_homicidios_desigualdades %>%
-          # filter(nome_municipio %in% c(municipio, uf_minc, "Brasil")) %>%
+        top50_homicidios_desigualdades %>%
           filter(nome_municipio == municipio & uf == uf_munic |
                    nome_municipio == uf_munic |
                    nome_municipio == "Brasil") %>%
           mutate(
             ranking = i,
-            municipio_top100 = municipio,
+            municipio_top50 = municipio,
             nivel_geografico = nome_municipio
           ) %>%
-          select(-any_of("pop_jovem_negra")) %>%
           select(
-            cd_municipio_6digitos, municipio_top100, uf, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
-            ends_with(c("negros","negras","brancos","brancas","negra","rural")), starts_with("razao")
+            cd_municipio_6digitos, municipio_top50, uf, nivel_geografico, ranking, homicidios, indicador_homicidios_negros,
+            starts_with("pop"),ends_with(c("negros","negras","brancos","brancas","negra","rural")), starts_with("razao")
           )
       )
   }
   print(paste0("Finalizamos o numero ",i," do raking!"))
 }
 
-top_100_df <- top_100_df %>%
+top_50_df <- top_50_df %>%
   mutate(
     uf = case_when(uf == "Brasil" ~ "-", TRUE ~ uf),
     nivel_geografico_2 = case_when(
       nivel_geografico %in% as.vector(cods_uf[,2])[[1]] ~ "UF",
-      nivel_geografico %in% as.vector(top100_homicidios_desigualdades[1:100,2])[[1]] ~ "Municipio",
+      nivel_geografico %in% as.vector(top50_homicidios_desigualdades[1:50,2])[[1]] ~ "Municipio",
       TRUE ~ nivel_geografico
     )
   ) %>%
-  select(ranking, municipio_top100, cd_municipio_6digitos, uf, nivel_geografico,nivel_geografico_2, homicidios, indicador_homicidios_negros,
-         starts_with("indicador_pop"),
+  select(ranking, municipio_top50, cd_municipio_6digitos, uf, nivel_geografico,nivel_geografico_2,
+         homicidios, indicador_homicidios_negros,
+         starts_with("pop"),starts_with("indicador_pop"),
          starts_with("indicador_em"),ends_with("em"),starts_with("indicador_acesso"),ends_with("esgoto"),
          starts_with("indicador_pbf"),ends_with("pbf"),starts_with("indicador_renda"),ends_with("fontes"),
          starts_with("indicador_maes"),ends_with("adolescentes"),starts_with("indicador_desocupados"),ends_with("desocupados"),
          starts_with("indicador_informalidade"),ends_with("informalidade"))
 
-top_100_df_exportar <- top_100_df %>%
+top_50_df_exportar <- top_50_df %>%
   select(-nivel_geografico) %>%
   pivot_wider(names_from = nivel_geografico_2, values_from = c(homicidios:razao_informalidade)) %>%
   group_by(ranking) %>%
@@ -231,8 +219,9 @@ top_100_df_exportar <- top_100_df %>%
   ungroup() %>%
   select(-c(id,cd_municipio_6digitos)) %>%
   select(all_of(c(
-    "ranking","municipio_top100","uf","homicidios_Municipio",
+    "ranking","municipio_top50","uf","homicidios_Municipio",
     "indicador_homicidios_negros_Municipio",
+    "pop_total_Municipio","pop_jovem_negra_Municipio",
     "indicador_pop_negra_Municipio","indicador_pop_negra_UF",
     "indicador_pop_negra_Brasil",
     "indicador_pop_rural_Municipio","indicador_pop_rural_UF",
@@ -277,19 +266,20 @@ top_100_df_exportar <- top_100_df %>%
 # exportar base
 
 write_csv(
-  top_100_df_exportar,
+  top_50_df_exportar,
   file = file.path(
-    DIR_top100,
-    "resultados - Top 100 municipios violencia e desigualdade - ajustado por pop jovem negra em munic acima de 5mil hab [2023.11.25].csv"
+    DIR_top50,
+    "resultados - Top 50 municipios violencia e desigualdade - ajustado por pop jovem negra [lista final].csv"
   )
 )
-rm(top_100_df_exportar)
+
+rm(top_50_df_exportar)
 
 write_parquet(
-  top_100_df,
+  top_50_df,
   sink = file.path(
-    DIR_top100,
-    "base de dados - Top 100 municipios violencia e desigualdade  - ajustado por pop jovem negra em munic acima de 5mil hab [2023.11.25].parquet"
+    DIR_top50,
+    "resultados - Top 50 municipios violencia e desigualdade - ajustado por pop jovem negra [lista final].parquet"
   )
 )
 
