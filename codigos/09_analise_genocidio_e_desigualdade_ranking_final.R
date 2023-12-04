@@ -426,6 +426,7 @@ top_50_df %>%
     names_to = "indicadores",
     values_to = "valor"
   ) %>%
+  filter(valor > 0) %>%
   mutate(indicadores = case_when(
     # indicadores == "pop_negra"~ "Pop. negra",
     # indicadores == "pop_rural"~ "Pop. rural",
@@ -479,20 +480,21 @@ names(cols) = c("UF","Municipio")
 # criacao de grafico
 top_50_df %>%
   filter(uf != "-") %>%
-  select(-ends_with(c("_negras","_brancas","total","jovem_negra"))) %>%
+  select(-ends_with(c("_negras","_brancas","total","jovem_negra","_rural","_negra"))) %>%
   select(-c(starts_with("razao"),ends_with("brancos"),homicidios, indicador_homicidios_negros)) %>%
   rename_all(~str_remove(.x,"indicador_")) %>%
   rename_all(~str_remove(.x,"_negros")) %>%
   select(-municipio_top50) %>%
-  pivot_longer(pop_negra:informalidade, names_to = "indicadores", values_to = "valores") %>%
+  pivot_longer(em:informalidade, names_to = "indicadores", values_to = "valores") %>%
+  filter(valores > 0) %>%
   mutate(indicadores = case_when(
-    indicadores == "pop_negra"~ "Pop. negra",
-    indicadores == "pop_rural"~ "Pop. rural",
+    # indicadores == "pop_negra"~ "Pop. negra",
+    # indicadores == "pop_rural"~ "Pop. rural",
     indicadores == "em"~ "Ensino Médio",
     indicadores == "acesso_esgoto"~ "Acesso a Esgoto",
     indicadores == "pbf"~ "Beneficiário do PBF",
     indicadores == "renda_outras_fontes"~ "Rendimento (outras fontes)",
-    indicadores == "desocupados"~ "Desocupados ou inativo",
+    indicadores == "desocupados"~ "Inativo ou desocupado",
     indicadores == "informalidade"~ "Informalidade"
   )) |>
   ggplot() +
@@ -520,7 +522,7 @@ ggsave(
   filename = "graf_indicadores_desigualdade_POR_UF.jpeg",
   device = "jpeg",
   path = file.path(DIR_top50, "graficos - ranking violencia e desigualdade"),
-  width = 22,
+  width = 18,
   height = 11,
   units = "in"
 )
