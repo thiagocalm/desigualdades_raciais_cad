@@ -380,7 +380,7 @@ df_shape_munic |>
   geom_sf(data = shape_br,
           fill = "transparent",
           colour = "black", size = 0.9) +
-  geom_sf(data = df_top100_shape_point,
+  geom_sf(data = df_top50_shape_point,
           fill = "#e6550d",
           alpha = .8,
           shape = 21) +
