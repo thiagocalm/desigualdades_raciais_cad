@@ -12,11 +12,12 @@ gc()
 if(!require("pacman")) install.packages(("pacman"))
 pacman::p_load(tidyverse, arrow)
 
-
 # Importacao dos dados ----------------------------------------------------
 
 # leitura dos dados
-df_desigualdade <- read_parquet(file = paste0("./output/cad_indicadores_municipais.parquet"))
+df_desigualdade <- read_parquet(
+  file = file.path("./output","base de dados - desigualdade","cad_indicadores_municipais.parquet")
+)
 
 # Exploratória da distribuição --------------------------------------------
 
@@ -28,6 +29,7 @@ df_desigualdade |>
     cor = str_sub(indicador, start= -5,-3),
     cor = as.factor(case_when(cor == "egr" ~ "Negros",cor == "anc" ~ "Brancos", TRUE ~ "Total"))
   ) |>
+  filter(valor > 0 & valor < 100) %>%
   mutate(
     indicador = str_sub(indicador, 11,12),
     indicador = as.factor(case_when(
@@ -70,7 +72,7 @@ df_desigualdade |>
   ggplot() +
   aes(x = Negros, y = Brancos, color = as.factor(ano)) +
   geom_point(alpha = .1) +
-  geom_segment(aes(x = 0, xend = 100, y = 0, yend = 100,linetype = "dashed"), color = "red") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
   geom_smooth(method = loess, show.legend = FALSE) +
   facet_wrap(.~ indicador) +
   scale_color_brewer(palette = "PuBuGn") +
