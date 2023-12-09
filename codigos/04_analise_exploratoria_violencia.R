@@ -46,6 +46,23 @@ df_homicidios %>%
   reframe(absoluto = n(), .by = c(raca_registrada, Ano)) %>%
   mutate(relativo = 100*(absoluto/sum(absoluto)), .by = c(Ano))
 
+# Número de homicídios - POR RACA
+
+df_homicidios %>%
+  mutate(raca = case_when(racacor2 == 1 ~ "Branca", racacor2 == 2 ~ "Negra", TRUE ~ "9")) %>%
+  filter(raca != "9") %>%
+  reframe(absoluto = n(), .by = raca) %>%
+  mutate(relativo = (absoluto/sum(absoluto)*100))
+
+# Número de homicídios registrados - POR RACA E ANO
+
+df_homicidios %>%
+  mutate(raca = case_when(racacor2 == 1 ~ "Branca", racacor2 == 2 ~ "Negra", TRUE ~ "9")) %>%
+  filter(raca != "9") %>%
+  reframe(absoluto = n(), .by = c(Ano, raca)) %>%
+  mutate(relativo = (absoluto/sum(absoluto)*100), .by = Ano) %>%
+  arrange(raca)
+
 # Distribuição dos homicidios por sexo
 
 df_homicidios %>%
@@ -110,8 +127,9 @@ df_homicidios %>%
   geom_col(aes(fill = raca), position = position_dodge()) +
   geom_vline(xintercept = 0, linewidth = .8, color = "black") +
   scale_fill_brewer(palette = "Accent") +
+  coord_cartesian(xlim = c(-25,25)) +
   annotate("text", x=-15, y="60-64", label= "Masculino",color = "grey") +
-  annotate("text", x=10, y="60-64", label= "Feminino",color = "grey") +
+  annotate("text", x=15, y="60-64", label= "Feminino",color = "grey") +
   theme_light() +
   labs(
     y = "Grupos etários (quinquenais)"
@@ -134,6 +152,18 @@ df_homicidios %>%
   filter(!is.na(jovem)) %>%
   reframe(absoluto = n(), .by = c(jovem)) %>%
   mutate(relativo = 100*(absoluto/sum(absoluto)))
+
+# Distribuição dos homicídios entre jovens e restante - POR ANO
+
+df_homicidios %>%
+  mutate(
+    raca = case_when(racacor2 == 1 ~ "Branca", racacor2 == 2 ~ "Negra", TRUE ~ "9"),
+    jovem = case_when(idade2 %in% 15:29 ~ "Jovem", is.na(idade2) ~ NA_character_, TRUE ~ "Restante")
+  ) %>%
+  filter(!is.na(jovem)) %>%
+  reframe(absoluto = n(), .by = c(Ano,jovem)) %>%
+  mutate(relativo = 100*(absoluto/sum(absoluto)), .by = Ano) %>%
+  arrange(jovem, Ano)
 
 # Distribuição dos homicídios entre jovens e restante - POR RAÇA
 
@@ -161,6 +191,20 @@ df_homicidios %>%
   arrange(raca, jovem, Ano) %>%
   filter(jovem == "Jovem") %>%
   print(n = 20)
+
+# Distribuição dos homicídios entre jovens e restante - POR RAÇA E SEXO
+
+df_homicidios %>%
+  mutate(
+    raca = case_when(racacor2 == 1 ~ "Branca", racacor2 == 2 ~ "Negra", TRUE ~ "9"),
+    sexo2 = case_when(sexo == "1" ~ "Masculino", sexo == "2" ~ "Feminino", TRUE ~ "9"),
+    jovem = case_when(idade2 %in% 15:29 ~ "Jovem", is.na(idade2) ~ NA_character_, TRUE ~ "Restante")
+  ) %>%
+  filter(!is.na(jovem)) %>%
+  filter(raca != "9") %>%
+  filter(sexo2 != "9") %>%
+  reframe(absoluto = n(), .by = c(raca,jovem,sexo2, Ano)) %>%
+  arrange(raca, jovem, sexo2, Ano)
 
 # Descritivas - intervencioes -----------------------------------------
 
@@ -199,6 +243,25 @@ df_homicidios %>%
   reframe(absoluto = n(), .by = c(raca_registrada, Ano)) %>%
   mutate(relativo = 100*(absoluto/sum(absoluto)), .by = c(Ano))
 
+# Número de homicídios - POR RACA
+
+df_homicidios %>%
+  filter(InterLegal == 1) %>%
+  mutate(raca = case_when(racacor2 == 1 ~ "Branca", racacor2 == 2 ~ "Negra", TRUE ~ "9")) %>%
+  filter(raca != "9") %>%
+  reframe(absoluto = n(), .by = raca) %>%
+  mutate(relativo = (absoluto/sum(absoluto)*100))
+
+# Número de homicídios registrados - POR RACA E ANO
+
+df_homicidios %>%
+  filter(InterLegal == 1) %>%
+  mutate(raca = case_when(racacor2 == 1 ~ "Branca", racacor2 == 2 ~ "Negra", TRUE ~ "9")) %>%
+  filter(raca != "9") %>%
+  reframe(absoluto = n(), .by = c(Ano, raca)) %>%
+  mutate(relativo = (absoluto/sum(absoluto)*100), .by = Ano) %>%
+  arrange(raca)
+
 # Distribuição dos homicidios por sexo
 
 df_homicidios %>%
@@ -262,22 +325,23 @@ df_homicidios %>%
   mutate(relativo = 100*(absoluto/sum(absoluto)), .by = c(sexo2, raca)) %>%
   arrange(sexo2, raca,idade) %>%
   ggplot() +
-  aes(x = ifelse(sexo2 == "Masculino", -relativo,relativo), y = idade) +
+  aes(x = ifelse(sexo2 == "Masculino", -absoluto,absoluto), y = idade) +
   geom_col(aes(fill = raca), position = position_dodge()) +
   geom_vline(xintercept = 0, linewidth = .8, color = "black") +
   scale_fill_brewer(palette = "Accent") +
-  annotate("text", x=-15, y="60-64", label= "Masculino",color = "grey") +
-  annotate("text", x=10, y="60-64", label= "Feminino",color = "grey") +
+  coord_cartesian(xlim = c(-3500,3500)) +
+  scale_x_continuous(breaks = seq(-3500,3500,500)) +
+  annotate("text", x=-2000, y="60-64", label= "Masculino",color = "grey") +
+  annotate("text", x=2000, y="60-64", label= "Feminino",color = "grey") +
   theme_light() +
   labs(
-    y = "Grupos etários (quinquenais)"
+    y = "Grupos etários (quinquenais)",
+    x = "Número (absoluto) de homicídios por intervenção legal"
   ) +
   theme(
     legend.title = element_blank(),
-    axis.title.y = element_text(face = "bold", size = 14),
-    axis.text.y = element_text(size = 12),
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank()
+    axis.title = element_text(face = "bold", size = 14),
+    axis.text = element_text(size = 12)
   )
 
 # Distribuição dos homicídios entre jovens e restante - GERAL

@@ -41,12 +41,20 @@ df_desigualdade |>
       indicador == "de" ~ "Desocupados",
       indicador == "in" ~ "Informalidade"
     ))) |>
+  filter(indicador != "Mães adolescentes") %>%
   ggplot() +
   aes(x = as.factor(ano), y = valor, color = cor) +
   geom_boxplot() +
   facet_wrap(.~ indicador) +
   scale_color_brewer(palette = "Accent") +
-  theme_light()
+  theme_light() +
+  labs(
+    x = "Ano",
+    y = "%"
+  ) +
+  theme(
+    legend.title = element_blank()
+  )
 
 # Scatter plot
 
